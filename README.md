@@ -2,6 +2,9 @@
 
 Common code for SNAPSI diagnostics
 
+scripts/paths.py:
+ -Routines for getting paths to archive files and processed output
+ -Various lists of models, variables, experiments, start dates, etc.
 
 ## Proposed diagnostics
 
