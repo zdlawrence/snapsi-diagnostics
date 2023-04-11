@@ -10,7 +10,7 @@ start_dates = ['s20180125', 's20180208', 's20181213', 's20190108', 's20190829', 
 
 centers           = {'CNRM-CM61' : 'Meteo-France'}
 
-variant_ids       = {'CNRM-CM61' : 'r{member}i1p1f1'}
+variant_id_templates = {'CNRM-CM61' : 'r{member}i1p1f1'}
 
 default_grids     = {'CNRM-CM61' : 'gr'}
 default_versions  = {'CNRM-CM61' : 'v20221123'}
@@ -35,7 +35,7 @@ def get_processed_base_path(model, experiment, start_date):
                 model = model, \
                 experiment = experiment, \
                 start_date = start_date)
-    template = '{root}/processed/{model}/{experiment}/{start_date}/'
+    template = '{root}{model}/{experiment}/{start_date}/'
     
     return template.format(**keys)
 
@@ -45,7 +45,7 @@ def get_archive_base_path(model, experiment, start_date, variable, member, grid 
     if version == None: 
         version = default_versions[model]
 
-    keys = dict(root = gws, \
+    keys = dict(root = archive, \
                 center = centers[model], \
                 model = model, \
                 experiment = experiment, \
@@ -55,10 +55,10 @@ def get_archive_base_path(model, experiment, start_date, variable, member, grid 
                 version = version
                )
     
-    keys['variant_id'] = variant_id_template[model].format(member)    
-    keys['table']      = find_variable_table(variable)
+    keys['variant_id'] = variant_id_templates[model].format(member = member)    
+    keys['table']      = get_variable_table(variable)
     
-    template = '{root}/{center}/{model}/{experiment}/{start_date}/{variant_id}/{table}/{var}/{grid}/{version}/'
+    template = '{root}{center}/{model}/{experiment}/{start_date}/{variant_id}/{table}/{variable}/{grid}/{version}/'
     return template.format(**keys)
 
 def open_archive_var(model, experiment, start_date, variable, member, grid = None, version = None):
