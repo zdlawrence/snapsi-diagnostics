@@ -1,3 +1,22 @@
+""" This python script generates a zonal mean dataset for a 
+specified set of SNAPSI data. It takes required commandline 
+args that specify the institution_id (model center), 
+sub_experiment_id (model init), and experiment_id -- in that 
+order -- which are used to query the SNAPSI intake catalog. 
+
+This script uses pyzome (https://github.com/zdlawrence/pyzome)
+to compute the zonal mean datasets. 
+
+Currently the script iterates over ensemble members and 
+outputs files for these individually. In principle, the 
+pyzome operations should work lazily on all ensemble members, but 
+I ran into issues with my SLURM jobs being killed when I tried 
+to keep all ensemble members together.  
+
+Original Author: Z. D. Lawrence
+Last modified: 2023-04-25
+""" 
+
 import argparse
 import pathlib
 from datetime import datetime

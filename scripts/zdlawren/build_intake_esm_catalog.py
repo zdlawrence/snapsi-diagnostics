@@ -1,3 +1,20 @@
+""" This python script tries to generate an intake catalog 
+of the SNAPSI data archive. Since the SNAPSI output data are 
+all CMORized, we can simply make use of ecgtools to parse 
+the files. 
+
+Running this script on sci3 took over 13 hours to generate 
+the intake catalog containing only 5 models. Not sure if it 
+would complete faster on the LOTUS cluster, but it's clear 
+that as more models get added, it would be more efficient 
+to make "sub-catalogs" of individual models and try to 
+combine/merge them into the overall "master" catalog. 
+As of this moment, not 100% sure how to accomplish this!
+
+Original Author: Z. D. Lawrence
+Last modified: 2023-04-25
+"""
+
 import pickle
 from datetime import datetime
 
@@ -13,7 +30,7 @@ root_path = "/badc/snap/data/post-cmip6/SNAPSI/"
 # directory (in which case a depth of 8 would be necessary).
 # May need to do this when more SNAPSI data comes in but
 # TODO: figure out how to combine catalogs (so that we do not
-# have to repeat work
+# have to repeat work)
 print(f"Initializing builder object with {root_path}")
 builder = Builder(paths=[root_path], extension=".nc", depth=9, njobs=12)
 
