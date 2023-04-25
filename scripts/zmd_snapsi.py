@@ -23,7 +23,7 @@ sub_experiment_id = args.subexperiment
 catalog = intake.open_esm_datastore("/gws/nopw/j04/snapsi/test-snapsi-catalog.json")
 subset = catalog.search(
     variable_id=["ua", "va", "ta", "zg", "wap"],
-    institution_id=args.institution, 
+    institution_id=institution_id, 
     sub_experiment_id=sub_experiment_id,
     experiment_id=experiment_id
 )
