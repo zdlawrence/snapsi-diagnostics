@@ -23,8 +23,31 @@ from datetime import datetime
 
 import intake
 import numpy as np
+import xarray as xr
 
 from pyzome.recipes import create_zonal_mean_dataset
+
+
+def is_zmd_file_bad(path_to_file):
+    """ A brute force function to tell if a zmd file 
+    is bad. If a SLURM job doesn't complete in time, 
+    a zmd file may be written to disk filled with nans.
+    Here we simply check each of the fields, and throw 
+    an error if any has more nans than half its full size.
+    This is done for the try except in the script below
+    so that the file can be remade.
+    """
+
+    tmp = xr.open_dataset(path_to_file)
+    if len(tmp.data_vars) < 17:
+        raise ValueError("zmd file does not have enough fields")
+    
+    for key, field in tmp.data_vars.items():
+        nbad = np.isnan(field).sum().data
+        total_size = field.nbytes/field.dtype.itemsize
+        if nbad > total_size/2:
+            raise ValueError("Field has too many nans")
+
 
 # Set up argument parser
 parser = argparse.ArgumentParser()
@@ -59,6 +82,23 @@ ds = ds.rename({"ua":"u", "va":"v", "wap":"w", "ta":"T", "zg": "Z"})
 
 # Iterate over ensemble members
 for member in ds.member_id.values:
+    
+    # Set up the output name/path
+    output_file = f"{institution_id}_{sub_experiment_id}_{experiment_id}_{member}_zmd.nc"
+    output_path = f"{str(output_dir)}/{output_file}"
+    
+    # Check if file already exists and if it can be read as a first order
+    # handler for re-running jobs that didn't finish in time before
+    if pathlib.Path(output_path).exists() is True:
+        try:
+            is_zmd_file_bad(output_path)
+        except Exception:
+            print(f"{output_path} already exists but has issues ... Remaking")
+            pass
+        else:
+            print(f"{output_path} already exists and is complete! Skipping ...")
+            continue
+    
     print(f"Now working on {member} for {institution_id} {experiment_id} {sub_experiment_id}")
     zmd = create_zonal_mean_dataset(
         ds.sel(member_id=member),
@@ -71,11 +111,7 @@ for member in ds.member_id.values:
     # Set up encoding dictionary to ensure everything gets saved as
     # float32 (with no compression to ensure dask chunking can be used on output)
     comp = dict(dtype="float32")
-    encoding = {var: comp for var in zmd.data_vars}
-    
-    # Set up the output name/path
-    output_file = f"{institution_id}_{sub_experiment_id}_{experiment_id}_{member}_zmd.nc"
-    output_path = f"{str(output_dir)}/{output_file}"
+    encoding = {var: comp for var in zmd.data_vars}    
 
     # Since we're using dask for everything, no actual computations 
     # are done until the to_netcdf method is called
