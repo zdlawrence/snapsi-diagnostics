@@ -79,6 +79,11 @@ output_dir.mkdir(parents=True, exist_ok=True)
 ds = subset.to_dask()
 print(ds)
 ds = ds.rename({"ua":"u", "va":"v", "wap":"w", "ta":"T", "zg": "Z"})
+if ('lat_bnds') in ds.coords:
+    ds = ds.drop('lat_bnds')
+if ('lon_bnds') in ds.coords:
+    ds = ds.drop('lon_bnds')
+
 
 # Iterate over ensemble members
 for member in ds.member_id.values:
