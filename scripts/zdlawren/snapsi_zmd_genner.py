@@ -113,8 +113,8 @@ for eid in experiment_ids:
     print(f"Generating {args.outdir}/{scripts_fi}")
     text_for_script = "#!/bin/bash\n\n"
     text_for_script += f"#SBATCH --job-name=\"{args.institution}_{args.subexperiment}_{eid}\"\n"
-    text_for_script += "#SBATCH --mem={args.mem}\n"
-    text_for_script += "#SBATCH --time={args.timelimit}\n\n"
+    text_for_script += f"#SBATCH --mem={args.mem}\n"
+    text_for_script += f"#SBATCH --time={args.timelimit}\n\n"
     text_for_script += f"{args.python} -u {args.zmd} {args.institution} {args.subexperiment} {eid}\n"
 
     # Write string to file and chmod it for use
