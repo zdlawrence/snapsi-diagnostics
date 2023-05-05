@@ -7,6 +7,7 @@ import xarray as xr
 parser = argparse.ArgumentParser()
 parser.add_argument("institution", type=str, help="institution_id")
 parser.add_argument("--compile_complete", action="store_true", help="compile complete set of files into individual")
+parser.add_argument("--clean_partial", action="store_true", help="cleanup partial files from jobs that died early")
 args = parser.parse_args()
 
 dates = ["s20180125", "s20180208", "s20181213", "s20190108", "s20190829", "s20191001"]
@@ -32,7 +33,11 @@ for path in paths:
 
     non_full = np.where(fi_sizes != max_fi_size)[0]
     for ix in non_full:
-        print(f"\t{nc_files[ix].stem} only {fi_sizes[ix]} MiB") 
+        print(f"\t{nc_files[ix].stem} only {fi_sizes[ix]} MiB")
+        if args.clean_partial is True: 
+            print(f"\tRemoving {nc_files[ix].stem}")
+            nc_files[ix].unlink() 
+            num_nc_files -= 1
 
     if (args.compile_complete is True) and (num_nc_files >= 50) and (len(non_full) == 0):
         init = path.parts[7]
@@ -43,9 +48,10 @@ for path in paths:
         print(f"\t(compile_complete=True) Now compiling final dataset for {args.institution} {experiment} {init}")
         if (output_file.exists() is False) or (np.abs(output_file.stat().st_size/(1024*1024) - np.sum(fi_sizes)) >= 15):
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            mfds = xr.open_mfdataset(nc_files, combine="nested", concat_dim="member_id").load()
+            mfds = xr.open_mfdataset(nc_files, combine="nested", concat_dim="member_id")
             print(f"\t(compile_complete=True) Writing compiled dataset to {output_file}")
             mfds.to_netcdf(output_file)
+            mfds = None
         else:
             print(f"\t(compile_complete=True) {output_file} already exists; skipping!")
        
