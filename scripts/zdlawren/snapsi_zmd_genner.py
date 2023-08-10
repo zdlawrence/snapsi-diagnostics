@@ -3,7 +3,7 @@ bash scripts for computing zonal mean datasets of the SNAPSI
 data, which can be submitted thru SLURM with sbatch. 
 
 It requires commandline arguments specifying the 
-institution_id (model center) and sub_experiment_id (init date) as
+source_id (model name) and sub_experiment_id (init date) as
 targets; from there it will generate scripts for every available 
 experiment listed in the SNAPSI intake catalog (nominally, 
 at least 'control', 'nudged', and 'free')
@@ -13,7 +13,7 @@ am not very familiar with SLURM and how to pass specific args
 to scripts.
 
 Original Author: Z. D. Lawrence
-Last modified: 2023-05-04
+Last modified: 2023-08-10
 """
 
 import os
@@ -59,7 +59,7 @@ DEFAULT_ZMD_LOC = USER_HOME / "snapsi-diagnostics/scripts/zdlawren/zmd_snapsi.py
 
 # Set up the argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument("institution", type=str, help="institution_id")
+parser.add_argument("model", type=str, help="source_id")
 parser.add_argument("subexperiment", type=str, help="sub_experiment_id")
 parser.add_argument("--outdir", type=str, default=str(DEFAULT_OUTPUT_DIR))
 parser.add_argument("--python", type=str, default=str(DEFAULT_PYTHON_LOC))
@@ -80,12 +80,12 @@ if is_valid_memsize(args.mem) is False:
     msg = f"'{args.mem}' is not a valid memsize; needs [num]G where [num] is an int < 100"
     raise ValueError(msg)
 
-valid_institutions = ["CNR-ISAC", "ECCC", "KMA", "SNU", "UKMO"]
-if args.institution not in valid_institutions:
-    msg = f"First arg '{args.institution}' must be one of {valid_institutions}"
+valid_models = {"GLOBO", "GEM-NEMO", "GloSea6-GC32", "GRIMs", "GloSea6", "CNRM-CM61"}
+if args.model not in valid_models:
+    msg = f"First arg '{args.model}' must be one of {valid_models}"
     raise ValueError(msg)
 
-valid_subexps = ["s20180125", "s20180208", "s20181213", "s20190108", "s20190829", "s20191001"]
+valid_subexps = ("s20180125", "s20180208", "s20181213", "s20190108", "s20190829", "s20191001")
 if args.subexperiment not in valid_subexps:
     msg = f"Second arg '{args.subexperiment}' must be one of {valid_subexps}"
     raise ValueError(msg)
@@ -95,11 +95,11 @@ if args.subexperiment not in valid_subexps:
 if args.outdir == str(DEFAULT_OUTPUT_DIR):
     DEFAULT_OUTPUT_DIR.mkdir(exist_ok=True)
 
-# Open the Intake catalog and subset on the institution and subexperiment
-catalog = intake.open_esm_datastore("/gws/nopw/j04/snapsi/test-snapsi-catalog.json")
+# Open the Intake catalog and subset on the source_id and subexperiment
+catalog = intake.open_esm_datastore("/gws/nopw/j04/snapsi/test-snapsi-catalog-fast.json")
 subset = catalog.search(
     variable_id=["ua", "va", "ta", "zg", "wap"],
-    institution_id=args.institution,
+    source_id=args.model,
     sub_experiment_id=args.subexperiment,
 )
 
@@ -107,15 +107,15 @@ subset = catalog.search(
 experiment_ids = subset.df.experiment_id.unique()
 for eid in experiment_ids:
     # Auto-genned script name
-    scripts_fi = f"{args.institution}_{args.subexperiment}_{eid}.sh"
+    scripts_fi = f"{args.model}_{args.subexperiment}_{eid}.sh"
     
     # Content that goes into the file
     print(f"Generating {args.outdir}/{scripts_fi}")
     text_for_script = "#!/bin/bash\n\n"
-    text_for_script += f"#SBATCH --job-name=\"{args.institution}_{args.subexperiment}_{eid}\"\n"
+    text_for_script += f"#SBATCH --job-name=\"{args.model}_{args.subexperiment}_{eid}\"\n"
     text_for_script += f"#SBATCH --mem={args.mem}\n"
     text_for_script += f"#SBATCH --time={args.timelimit}\n\n"
-    text_for_script += f"{args.python} -u {args.zmd} {args.institution} {args.subexperiment} {eid}\n"
+    text_for_script += f"{args.python} -u {args.zmd} {args.model} {args.subexperiment} {eid}\n"
 
     # Write string to file and chmod it for use
     with open(f"{args.outdir}/{scripts_fi}", "w") as fi:
